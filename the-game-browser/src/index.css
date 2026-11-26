@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Lora", Georgia, serif;
+  --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #050506;
+    color: #f4f4f5;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@keyframes keypad-shake {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  18% {
+    transform: translate3d(-9px, 0, 0);
+  }
+  36% {
+    transform: translate3d(8px, 0, 0);
+  }
+  54% {
+    transform: translate3d(-6px, 0, 0);
+  }
+  72% {
+    transform: translate3d(5px, 0, 0);
+  }
+  88% {
+    transform: translate3d(-2px, 0, 0);
+  }
+}
+
+@keyframes phone-vibrate {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  12% {
+    transform: translate3d(-2px, 1px, 0);
+  }
+  24% {
+    transform: translate3d(2px, -1px, 0);
+  }
+  36% {
+    transform: translate3d(-1.5px, 0, 0);
+  }
+  48% {
+    transform: translate3d(0, 0, 0);
+  }
+  65% {
+    transform: translate3d(0, 0, 0);
+  }
+  74% {
+    transform: translate3d(-2px, 0.5px, 0);
+  }
+  84% {
+    transform: translate3d(2px, -0.5px, 0);
+  }
+  92% {
+    transform: translate3d(-1px, 0, 0);
+  }
+}
+
+@keyframes rupture-flicker {
+  0% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0.72;
+  }
+  32% {
+    opacity: 0.96;
+  }
+  45% {
+    opacity: 0.55;
+  }
+  58% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes battery-breathe {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes prologue-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-keypad-shake {
+  animation: keypad-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-phone-vibrate {
+  animation: phone-vibrate 0.55s ease-in-out both;
+}
+
+.animate-rupture-flicker {
+  animation: rupture-flicker 0.6s linear both;
+}
+
+.animate-battery-breathe {
+  animation: battery-breathe 2.2s ease-in-out infinite;
+}
+
+.animate-prologue-line {
+  animation: prologue-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle film grain overlay */
+.film-grain {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-keypad-shake,
+  .animate-phone-vibrate,
+  .animate-rupture-flicker,
+  .animate-battery-breathe,
+  .animate-prologue-line {
+    animation: none !important;
+  }
+}
