@@ -3,6 +3,7 @@ import { getPasscodeLength, verifyPasscode } from './passcode';
 import type { UsbErrorCode } from './usbHardware';
 
 export type ChapterPhase =
+  | 'TITLE_INTAKE'
   | 'PROLOGUE_PAST'
   | 'PROLOGUE_RUPTURE'
   | 'DEVICE_DEAD'
@@ -13,6 +14,7 @@ export type ChapterPhase =
 
 export interface ChapterState {
   readonly phase: ChapterPhase;
+  readonly detectiveName: string;
   readonly prologueCompleted: boolean;
   readonly usbConnected: boolean;
   readonly usbDeviceFingerprint: string | null;
@@ -26,6 +28,7 @@ export interface ChapterState {
 }
 
 export type ChapterAction =
+  | { type: 'START_INVESTIGATION'; detectiveName: string }
   | { type: 'ENTER_RUPTURE' }
   | { type: 'COMPLETE_PROLOGUE' }
   | { type: 'TAP_DEAD_SCREEN' }
@@ -43,10 +46,14 @@ export type ChapterAction =
 
 export function createInitialChapterState(options?: {
   skipPrologue?: boolean;
+  detectiveName?: string;
 }): ChapterState {
+  const skip = Boolean(options?.skipPrologue);
+  const cleanedName = options?.detectiveName?.trim() ?? '';
   return {
-    phase: options?.skipPrologue ? 'DEVICE_DEAD' : 'PROLOGUE_PAST',
-    prologueCompleted: Boolean(options?.skipPrologue),
+    phase: skip ? 'DEVICE_DEAD' : 'TITLE_INTAKE',
+    detectiveName: cleanedName || (skip ? 'Investigador' : ''),
+    prologueCompleted: skip,
     usbConnected: false,
     usbDeviceFingerprint: null,
     lastUsbError: null,
@@ -75,6 +82,16 @@ export function chapterReducer(
   action: ChapterAction
 ): ChapterState {
   switch (action.type) {
+    case 'START_INVESTIGATION': {
+      const cleaned = action.detectiveName.trim().slice(0, 40);
+      if (!cleaned) return state;
+      return {
+        ...state,
+        detectiveName: cleaned,
+        phase: 'PROLOGUE_PAST',
+      };
+    }
+
     case 'ENTER_RUPTURE': {
       if (state.phase !== 'PROLOGUE_PAST') return state;
       return {

@@ -44,8 +44,8 @@ export const CANON_PROFILE: CanonProfile = {
   intakeDate: '19/11/2026',
   lockClockTime: '03:17',
   lockClockDate: 'Terça-feira, 18 de novembro',
-  recoveredItemLabel: '01 aparelho celular (bateria esgotada)',
-  deviceModelLabel: 'Aparelho pessoal',
+  recoveredItemLabel: '01 celular pessoal (retido para análise · descarregado)',
+  deviceModelLabel: 'Celular pessoal',
 };
 
 /**

@@ -113,6 +113,32 @@
   }
 }
 
+@keyframes dossier-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes lamp-flicker {
+  0%, 92%, 100% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0.86;
+  }
+  96% {
+    opacity: 0.98;
+  }
+  98% {
+    opacity: 0.9;
+  }
+}
+
 .animate-keypad-shake {
   animation: keypad-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -133,14 +159,42 @@
   animation: prologue-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.animate-dossier-reveal {
+  animation: dossier-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-lamp-flicker {
+  animation: lamp-flicker 9s ease-in-out infinite;
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle film grain overlay */
+/* Subtle film grain & distressed scanned-paper surface */
 .film-grain {
   background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
   background-size: 24px 24px;
+}
+
+.dossier-paper-noise {
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.011) 0px,
+      rgba(255, 255, 255, 0.011) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  background-size: 220px 220px, 100% 4px;
+}
+
+.parchment-cta {
+  background-image:
+    radial-gradient(circle at 18% 30%, rgba(120, 92, 62, 0.16), transparent 55%),
+    radial-gradient(circle at 86% 74%, rgba(92, 62, 42, 0.2), transparent 52%),
+    linear-gradient(180deg, #dfd2bc 0%, #cfc0a5 52%, #c2b092 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -148,7 +202,9 @@
   .animate-phone-vibrate,
   .animate-rupture-flicker,
   .animate-battery-breathe,
-  .animate-prologue-line {
+  .animate-prologue-line,
+  .animate-dossier-reveal,
+  .animate-lamp-flicker {
     animation: none !important;
   }
 }

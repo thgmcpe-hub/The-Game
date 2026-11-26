@@ -11,6 +11,7 @@ import {
   PhoneOutgoing,
   Zap,
 } from 'lucide-react';
+import { chapterAudio } from '../game/audio';
 import { CANON_PROFILE, GENERATED_ASSETS } from '../game/canonConfig';
 import {
   PHONE_CALLS,
@@ -26,13 +27,17 @@ type PhoneAppId = 'home' | 'messages' | 'photos' | 'notes' | 'calls';
 
 interface UnlockedPhoneOSProps {
   usbConnected: boolean;
+  detectiveName?: string;
 }
 
 /**
  * State E — Acesso autorizado.
  * Beginning of the real exploration inside Letícia's unlocked smartphone.
  */
-export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
+export function UnlockedPhoneOS({
+  usbConnected,
+  detectiveName,
+}: UnlockedPhoneOSProps) {
   const [activeApp, setActiveApp] = useState<PhoneAppId>('home');
   const [selectedThread, setSelectedThread] = useState<MessageThread | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
@@ -41,10 +46,16 @@ export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
   const [brokenPhotos, setBrokenPhotos] = useState<Record<string, boolean>>({});
 
   const goHome = () => {
+    chapterAudio.playUiTap();
     setActiveApp('home');
     setSelectedThread(null);
     setSelectedPhoto(null);
     setSelectedNote(null);
+  };
+
+  const openApp = (app: PhoneAppId) => {
+    chapterAudio.playUiTap();
+    setActiveApp(app);
   };
 
   return (
@@ -97,7 +108,7 @@ export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
                 {CANON_PROFILE.lockClockDate}
               </p>
               <p className="mt-4 truncate border-t border-white/10 pt-3 font-mono text-[10px] text-zinc-400">
-                Sem serviço · Sincronizado em 18 nov
+                Sem serviço · Perícia{detectiveName ? ` · Det. ${detectiveName}` : ''}
               </p>
             </div>
 
@@ -105,7 +116,7 @@ export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
             <div className="grid grid-cols-2 gap-3.5 pb-4">
               <button
                 type="button"
-                onClick={() => setActiveApp('messages')}
+                onClick={() => openApp('messages')}
                 className="flex flex-col items-start gap-3 rounded-2xl border border-white/10 bg-zinc-900/75 p-4 text-left transition-colors hover:bg-zinc-800/85 focus-visible:outline-1 focus-visible:outline-zinc-300"
               >
                 <div className="flex w-full items-center justify-between">
@@ -124,7 +135,7 @@ export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
 
               <button
                 type="button"
-                onClick={() => setActiveApp('photos')}
+                onClick={() => openApp('photos')}
                 className="flex flex-col items-start gap-3 rounded-2xl border border-white/10 bg-zinc-900/75 p-4 text-left transition-colors hover:bg-zinc-800/85 focus-visible:outline-1 focus-visible:outline-zinc-300"
               >
                 <div className="flex w-full items-center justify-between">
@@ -143,7 +154,7 @@ export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
 
               <button
                 type="button"
-                onClick={() => setActiveApp('notes')}
+                onClick={() => openApp('notes')}
                 className="flex flex-col items-start gap-3 rounded-2xl border border-white/10 bg-zinc-900/75 p-4 text-left transition-colors hover:bg-zinc-800/85 focus-visible:outline-1 focus-visible:outline-zinc-300"
               >
                 <div className="flex w-full items-center justify-between">
@@ -162,7 +173,7 @@ export function UnlockedPhoneOS({ usbConnected }: UnlockedPhoneOSProps) {
 
               <button
                 type="button"
-                onClick={() => setActiveApp('calls')}
+                onClick={() => openApp('calls')}
                 className="flex flex-col items-start gap-3 rounded-2xl border border-white/10 bg-zinc-900/75 p-4 text-left transition-colors hover:bg-zinc-800/85 focus-visible:outline-1 focus-visible:outline-zinc-300"
               >
                 <div className="flex w-full items-center justify-between">

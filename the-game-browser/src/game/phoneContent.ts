@@ -5,17 +5,18 @@ export interface PrologueBlock {
   readonly act: 'past' | 'rupture';
   readonly heading?: string;
   readonly lines: readonly string[];
-  readonly reversedEcho?: string;
+  readonly closingDirective?: string;
   readonly emphasizeFirst?: boolean;
   readonly includeDocumentSlip?: boolean;
 }
 
 /**
  * Canonical prologue copy for Chapter 00.
- * - Opens immediately on launch so the player understands the story from frame 1.
- * - Weaves Letícia's full birth date organically into the archival intake record.
- * - Embeds an atmospheric reversed-word cue ("oirártnoc oa" / "de trás para frente")
- *   without ever revealing the numeric passcode itself.
+ * - Clean, fluid Brazilian Portuguese using natural commas instead of choppy periods.
+ * - Embeds 3 organic, psychologically grounded clues pointing to reverse/backwards order
+ *   across slides 02, 03, and 04 without ever stating or spoiling the passcode.
+ * - Explicitly establishes that Letícia's personal cell phone was retained for
+ *   analysis completely discharged.
  */
 export const PROLOGUE_BLOCKS: readonly PrologueBlock[] = [
   {
@@ -24,68 +25,54 @@ export const PROLOGUE_BLOCKS: readonly PrologueBlock[] = [
     heading: 'PRÓLOGO',
     emphasizeFirst: true,
     lines: [
-      'Há vinte e um anos, uma garota de quinze anos foi encontrada inconsciente.',
-      'Estava ferida. Havia sofrido uma pancada na cabeça.',
-      'Quando acordou, não conseguiu explicar o que havia acontecido.',
+      'Há 21 anos, uma garota de 15 anos foi encontrada inconsciente, desmaiada na esquina de trás de uma boate, ferida após sofrer uma pancada na cabeça.',
+      'Quando acordou, não conseguiu explicar o que havia acontecido, e até hoje ninguém descobriu quem esteve ali naquela noite.',
     ],
   },
   {
     id: 'past-2',
     act: 'past',
     lines: [
-      'As lembranças eram fragmentadas.',
-      'Uma sensação de perigo. Um lugar que não conseguia reconhecer.',
-      'A impressão de que alguém havia feito algo terrível — mas tudo na sua mente voltava de trás para frente.',
+      'As lembranças nunca voltavam em sequência, mas sempre em fragmentos fora de ordem, acompanhados por uma sensação constante de perigo.',
+      'Para suportar o medo, ela passou a organizar cada memória pelo avesso, como quem lê o próprio passado no espelho para não se perder.',
     ],
-    reversedEcho: 'etnerf arap sárt ed',
   },
   {
     id: 'past-3',
     act: 'past',
     lines: [
-      'Ela não sabia quem.',
-      'Não sabia exatamente o quê.',
-      'E, durante anos, não soube distinguir o que realmente lembrava daquilo que sua própria mente tentava reconstruir.',
+      'Ela nunca descobriu quem lhe fizera algo tão terrível, nem o que realmente aconteceu enquanto esteve desacordada naquele lugar desconhecido.',
+      'Durante anos, tentou reconstruir aquela noite caminhando passo a passo do fim ao começo, tentando separar o que viveu daquilo que sua mente preenchia.',
     ],
   },
   {
     id: 'past-4',
     act: 'past',
+    emphasizeFirst: true,
     lines: [
-      `Seu nome era ${CANON_PROFILE.firstName}.`,
-      'Hoje, aos trinta e seis anos, ela construiu uma vida sobre perguntas que nunca tiveram respostas.',
-      'Mas algumas coisas não permanecem enterradas para sempre.',
+      `O nome dela era ${CANON_PROFILE.firstName}, hoje aos 36 anos, alguém que construiu uma vida inteira sobre perguntas sem resposta.`,
+      'Mesmo quando anotava datas ou segredos importantes, mantinha o hábito silencioso de olhar tudo de trás para frente, convencida de que só assim o que passou não voltaria a alcançá-la.',
     ],
   },
   {
     id: 'rupture-1',
     act: 'rupture',
     emphasizeFirst: true,
-    includeDocumentSlip: true,
     lines: [
-      `${CANON_PROFILE.firstName} desapareceu.`,
-      'O que aconteceu com ela ainda não foi esclarecido.',
+      `${CANON_PROFILE.firstName} desapareceu sem deixar rastro, e até agora ninguém sabe o que aconteceu com ela.`,
+      'Entre seus pertences, o celular pessoal dela foi recolhido e retido para análise, entregue à perícia completamente descarregado, guardando mensagens, fotografias e segredos dos seus últimos dias.',
     ],
   },
   {
     id: 'rupture-2',
     act: 'rupture',
-    lines: [
-      'Entre seus pertences, existe um dispositivo que pode guardar informações sobre os últimos acontecimentos de sua vida.',
-      'Mensagens. Fotografias. Registros. Segredos.',
-      'Ou absolutamente nada que explique seu desaparecimento.',
-    ],
-  },
-  {
-    id: 'rupture-3',
-    act: 'rupture',
     emphasizeFirst: true,
+    includeDocumentSlip: true,
     lines: [
-      'Você está prestes a acessar esse dispositivo.',
-      'O que encontrar nele dependerá do que conseguir descobrir — às vezes, até o que parece simples só faz sentido lido ao contrário.',
-      'E nem tudo que foi escondido deveria, necessariamente, ser encontrado.',
+      `Você está prestes a acessar o celular de ${CANON_PROFILE.firstName}, entregue sem carga e protegido por senha.`,
+      'Tudo o que você descobrir dependerá da sua atenção aos detalhes, pois nem tudo que ficou escondido deveria ser encontrado.',
     ],
-    reversedEcho: 'oirártnoc oa',
+    closingDirective: 'Desbloqueie o celular para dar início à investigação.',
   },
 ];
 

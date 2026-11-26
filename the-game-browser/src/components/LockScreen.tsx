@@ -169,19 +169,19 @@ export function LockScreen({
       ) : (
         <>
           {/* iPhone Lock Header + Passcode Dots */}
-          <div className="relative z-10 flex flex-col items-center px-6 pt-5 text-center">
+          <div className="relative z-10 flex flex-col items-center px-6 pt-3 text-center">
             <Lock className="h-4 w-4 text-white/85" aria-hidden="true" />
-            <p className="mt-2 text-[44px] leading-none font-light tracking-tight text-white tabular-nums">
+            <p className="mt-1.5 text-[38px] leading-none font-light tracking-tight text-white tabular-nums">
               {CANON_PROFILE.lockClockTime}
             </p>
             <p className="mt-1 text-xs font-normal text-white/75">
               {CANON_PROFILE.lockClockDate}
             </p>
 
-            <div className="mt-6 flex flex-col items-center">
+            <div className="mt-4 flex flex-col items-center">
               <p
                 aria-live="polite"
-                className="h-5 text-[15px] font-normal tracking-tight text-white/95"
+                className="h-5 text-sm font-normal tracking-tight text-white/95"
               >
                 {showErrorLabel ? 'Código incorreto' : 'Digite o código'}
               </p>
@@ -190,7 +190,7 @@ export function LockScreen({
                 data-testid="passcode-dots"
                 data-filled={enteredDigits.length}
                 aria-label={`${enteredDigits.length} de ${passcodeLength} dígitos inseridos`}
-                className={`mt-4 flex items-center gap-3 ${
+                className={`mt-3 flex items-center gap-3 ${
                   shaking ? 'animate-keypad-shake' : ''
                 }`}
               >
@@ -212,11 +212,11 @@ export function LockScreen({
           </div>
 
           {/* Authentic iPhone Circular Frosted Keypad */}
-          <div className="relative z-10 flex flex-col items-center px-6 pb-5">
+          <div className="relative z-10 flex flex-col items-center px-6 pb-3">
             <div
               role="group"
               aria-label="Teclado numérico"
-              className="grid w-full max-w-[276px] grid-cols-3 justify-items-center gap-x-5 gap-y-3.5"
+              className="grid w-full max-w-[258px] grid-cols-3 justify-items-center gap-x-4 gap-y-2.5"
             >
               {KEYPAD_ROWS.flat().map((key) => (
                 <button
@@ -224,13 +224,13 @@ export function LockScreen({
                   type="button"
                   onClick={() => onDigit(key.digit)}
                   aria-label={`Dígito ${key.digit}`}
-                  className="flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full bg-white/[0.15] text-white backdrop-blur-md transition-colors duration-100 hover:bg-white/[0.24] active:scale-95 active:bg-white/[0.38] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  className="flex h-[64px] w-[64px] flex-col items-center justify-center rounded-full bg-white/[0.15] text-white backdrop-blur-md transition-colors duration-100 hover:bg-white/[0.24] active:scale-95 active:bg-white/[0.38] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
-                  <span className="text-[28px] leading-none font-light tabular-nums">
+                  <span className="text-[26px] leading-none font-light tabular-nums">
                     {key.digit}
                   </span>
                   {key.letters && (
-                    <span className="mt-0.5 text-[9px] font-semibold tracking-[0.16em] text-white/80">
+                    <span className="mt-0.5 text-[8px] font-semibold tracking-[0.16em] text-white/80">
                       {key.letters}
                     </span>
                   )}
@@ -238,13 +238,13 @@ export function LockScreen({
               ))}
 
               {/* Bottom row: empty spacer | 0 | Apagar (iOS style) */}
-              <div className="h-[72px] w-[72px]" aria-hidden="true" />
+              <div className="h-[64px] w-[64px]" aria-hidden="true" />
 
               <button
                 type="button"
                 onClick={() => onDigit('0')}
                 aria-label="Dígito 0"
-                className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/[0.15] text-[28px] font-light text-white tabular-nums backdrop-blur-md transition-colors duration-100 hover:bg-white/[0.24] active:scale-95 active:bg-white/[0.38] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-white/[0.15] text-[26px] font-light text-white tabular-nums backdrop-blur-md transition-colors duration-100 hover:bg-white/[0.24] active:scale-95 active:bg-white/[0.38] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 0
               </button>
@@ -254,7 +254,7 @@ export function LockScreen({
                 disabled={enteredDigits.length === 0}
                 onClick={onBackspace}
                 aria-label="Apagar último dígito"
-                className="flex h-[72px] w-[72px] items-center justify-center text-sm font-normal text-white/90 transition-opacity hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-0"
+                className="flex h-[64px] w-[64px] items-center justify-center text-sm font-normal text-white/90 transition-opacity hover:text-white active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-0"
               >
                 Apagar
               </button>
@@ -264,10 +264,10 @@ export function LockScreen({
       )}
 
       {/* iPhone Home Bar */}
-      <div className="relative z-10 flex justify-center pb-2.5">
+      <div className="relative z-10 flex justify-center pb-2">
         <div
           aria-hidden="true"
-          className="h-1 w-32 rounded-full bg-white/45"
+          className="h-1 w-28 rounded-full bg-white/45"
         />
       </div>
     </div>

@@ -4,9 +4,11 @@ import { EvidenceSlip } from './EvidenceSlip';
 
 interface PhoneChassisProps {
   children: ReactNode;
+  detectiveName?: string;
   isVibrating: boolean;
   usbConnected: boolean;
   usbBusy: boolean;
+  highlightUsbPort?: boolean;
   showHardwareControls: boolean;
   muted: boolean;
   onToggleMute: () => void;
@@ -24,9 +26,11 @@ interface PhoneChassisProps {
  */
 export function PhoneChassis({
   children,
+  detectiveName,
   isVibrating,
   usbConnected,
   usbBusy,
+  highlightUsbPort = false,
   showHardwareControls,
   muted,
   onToggleMute,
@@ -59,7 +63,7 @@ export function PhoneChassis({
 
         {/* Constant bottom utility dock: Prólogo (reread) · Ficha · USB-C · Áudio */}
         {showHardwareControls && (
-          <div className="relative z-20 flex shrink-0 items-center justify-between gap-1.5 border-t border-zinc-900/90 bg-[#070709] px-2.5 py-2">
+          <div className="relative z-20 flex shrink-0 items-center justify-between gap-1.5 border-t border-zinc-900/90 bg-[#070709] px-2.5 pt-2 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] sm:pb-2">
             <button
               type="button"
               data-testid="reread-prologue-btn"
@@ -71,7 +75,7 @@ export function PhoneChassis({
               <span className="whitespace-nowrap">Prólogo</span>
             </button>
 
-            <EvidenceSlip />
+            <EvidenceSlip detectiveName={detectiveName} />
 
             <button
               type="button"
@@ -86,7 +90,9 @@ export function PhoneChassis({
               className={`flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-[11px] font-mono transition-colors focus-visible:outline-1 focus-visible:outline-zinc-400 ${
                 usbConnected
                   ? 'border-zinc-700 bg-zinc-900 text-zinc-200'
-                  : 'border-zinc-800/90 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                  : highlightUsbPort
+                    ? 'border-[#b91c1c] bg-[#1a0c0e] text-[#f3e8d8] shadow-[0_0_16px_rgba(185,28,28,0.45)]'
+                    : 'border-zinc-800/90 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
               }`}
             >
               <Usb className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

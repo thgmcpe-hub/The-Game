@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { FileText, X } from 'lucide-react';
 import { CANON_PROFILE } from '../game/canonConfig';
 
+interface EvidenceSlipProps {
+  detectiveName?: string;
+}
+
 /**
  * Mobile-first documentary property intake sheet (Termo de Recolhimento).
  * Accessible discreetly from the device screen as a mobile bottom sheet
  * containing Letícia's biographical metadata organically (zero password hints).
  */
-export function EvidenceSlip() {
+export function EvidenceSlip({ detectiveName }: EvidenceSlipProps) {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -43,7 +47,7 @@ export function EvidenceSlip() {
         >
           <div
             onClick={(event) => event.stopPropagation()}
-            className="w-full rounded-t-3xl border-t border-stone-700/60 bg-[#161513] px-6 pt-3 pb-7 text-stone-200 shadow-2xl"
+            className="w-full rounded-t-3xl border-t border-stone-700/60 bg-[#161513] px-6 pt-3 pb-[calc(env(safe-area-inset-bottom)+5rem)] text-stone-200 shadow-2xl sm:pb-7"
           >
             {/* Mobile bottom-sheet grab handle */}
             <div
@@ -89,11 +93,20 @@ export function EvidenceSlip() {
                   {CANON_PROFILE.recoveredItemLabel}
                 </dd>
               </div>
+              {detectiveName && (
+                <div className="col-span-2">
+                  <dt className="text-[10px] text-stone-500">
+                    Responsável pela perícia
+                  </dt>
+                  <dd className="text-stone-200">Det. {detectiveName}</dd>
+                </div>
+              )}
               <div className="col-span-2">
                 <dt className="text-[10px] text-stone-500">Observação</dt>
                 <dd className="text-stone-300/90">
-                  Recolhido em {CANON_PROFILE.intakeDate} entre os pertences da
-                  titular. Sem resposta ao acionamento lateral por falta de carga.
+                  Celular pessoal retido para análise em {CANON_PROFILE.intakeDate}{' '}
+                  entre os pertences da titular. Entregue à perícia completamente
+                  descarregado.
                 </dd>
               </div>
             </dl>

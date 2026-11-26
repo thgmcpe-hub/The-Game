@@ -61,10 +61,29 @@ interface WebUsbManagerLike {
   ): void;
 }
 
+interface WebHidDeviceLike {
+  readonly vendorId: number;
+  readonly productId: number;
+  readonly productName?: string;
+}
+
+interface WebHidManagerLike {
+  getDevices(): Promise<WebHidDeviceLike[]>;
+  requestDevice(options: {
+    filters: Array<{ vendorId?: number; productId?: number }>;
+  }): Promise<WebHidDeviceLike[]>;
+}
+
 function getNavigatorUsb(): WebUsbManagerLike | null {
   if (typeof navigator === 'undefined') return null;
   const nav = navigator as Navigator & { usb?: WebUsbManagerLike };
   return nav.usb ?? null;
+}
+
+function getNavigatorHid(): WebHidManagerLike | null {
+  if (typeof navigator === 'undefined') return null;
+  const nav = navigator as Navigator & { hid?: WebHidManagerLike };
+  return nav.hid ?? null;
 }
 
 function getNavigatorBattery(): Promise<BatteryManagerLike> | null {
@@ -80,21 +99,50 @@ export function isWebUsbSupported(): boolean {
   return getNavigatorUsb() !== null;
 }
 
+export function isWebHidSupported(): boolean {
+  return getNavigatorHid() !== null;
+}
+
 export function isBatteryApiSupported(): boolean {
   if (typeof navigator === 'undefined') return false;
   const nav = navigator as Navigator & { getBattery?: unknown };
   return typeof nav.getBattery === 'function';
 }
 
+export type HardwareUsbSupportMode =
+  | 'battery-and-usb'
+  | 'battery-only'
+  | 'usb-only'
+  | 'manual-fallback';
+
+export function isLikelyMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent ?? '';
+  if (/Android|iPhone|iPad|iPod|Mobile/i.test(ua)) return true;
+  return (navigator.maxTouchPoints ?? 0) > 1;
+}
+
+export function getHardwareUsbSupport(): HardwareUsbSupportMode {
+  const hasBattery = isBatteryApiSupported();
+  const hasUsb = isWebUsbSupported() || isWebHidSupported();
+  if (hasBattery && hasUsb) return 'battery-and-usb';
+  if (hasBattery) return 'battery-only';
+  if (hasUsb) return 'usb-only';
+  return 'manual-fallback';
+}
+
 /**
  * Distinguishes a real phone/laptop actively charging on a USB power cable
  * from a desktop PC with no battery (which Chromium reports as charging=true,
  * level=1, chargingTime=0, dischargingTime=Infinity).
+ * When `sawUnplugged` is true (live false -> true transition), even a 100% laptop counts!
  */
 export function isRealBatteryActivelyCharging(
-  battery: Pick<BatteryManagerLike, 'charging' | 'level' | 'chargingTime'>
+  battery: Pick<BatteryManagerLike, 'charging' | 'level' | 'chargingTime'>,
+  options?: { isMobile?: boolean; sawUnplugged?: boolean }
 ): boolean {
   if (!battery.charging) return false;
+  if (options?.isMobile || options?.sawUnplugged) return true;
   const isDesktopDummy = battery.level === 1 && battery.chargingTime === 0;
   return !isDesktopDummy;
 }
@@ -253,6 +301,28 @@ export async function scanAuthorizedPairedUsb(
 }
 
 /**
+ * Checks once whether the host device's real battery is currently drawing USB power.
+ */
+export async function checkPhysicalChargerNow(): Promise<UsbConnectionOutcome | null> {
+  const batteryPromise = getNavigatorBattery();
+  if (!batteryPromise) return null;
+  try {
+    const battery = await batteryPromise;
+    const mobile = isLikelyMobileDevice();
+    if (isRealBatteryActivelyCharging(battery, { isMobile: mobile })) {
+      return {
+        ok: true,
+        deviceFingerprint: `usb-power:${Math.round(battery.level * 100)}pct`,
+        source: 'battery-charger',
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Invokes real physical power/USB detection from a user gesture on the USB-C port:
  * 1. First checks if the device's real battery is actively drawing power via USB charger.
  * 2. Otherwise opens the native browser WebUSB hardware picker so the player can
@@ -260,20 +330,9 @@ export async function scanAuthorizedPairedUsb(
  */
 export async function requestPhysicalUsbConnection(): Promise<UsbConnectionOutcome> {
   // 1. Check real physical charger via Battery Status API (phones & laptops)
-  const batteryPromise = getNavigatorBattery();
-  if (batteryPromise) {
-    try {
-      const battery = await batteryPromise;
-      if (isRealBatteryActivelyCharging(battery)) {
-        return {
-          ok: true,
-          deviceFingerprint: `usb-power:${Math.round(battery.level * 100)}pct`,
-          source: 'battery-charger',
-        };
-      }
-    } catch {
-      // Fall through to WebUSB hardware picker.
-    }
+  const chargerOutcome = await checkPhysicalChargerNow();
+  if (chargerOutcome?.ok) {
+    return chargerOutcome;
   }
 
   // 2. Open native WebUSB picker for physical USB peripherals connected to PC/OTG
@@ -301,8 +360,51 @@ export async function requestPhysicalUsbConnection(): Promise<UsbConnectionOutco
 }
 
 /**
+ * Opens Chrome/Edge's native WebHID picker on PC so the player can authorize
+ * any physical USB peripheral connected to their computer (mouse, keyboard,
+ * headset, controller, USB dongle) when WebUSB has no claimable devices.
+ */
+export async function requestPhysicalHidDevice(): Promise<UsbConnectionOutcome> {
+  const hid = getNavigatorHid();
+  if (!hid) {
+    return {
+      ok: false,
+      errorCode: 'UNSUPPORTED_BROWSER',
+    };
+  }
+
+  try {
+    const devices = await hid.requestDevice({ filters: [] });
+    if (!devices || devices.length === 0) {
+      return {
+        ok: false,
+        errorCode: 'USER_CANCELLED',
+      };
+    }
+    const first = devices[0];
+    const vid = first.vendorId.toString(16).padStart(4, '0');
+    const pid = first.productId.toString(16).padStart(4, '0');
+    return {
+      ok: true,
+      deviceFingerprint: `webhid:${vid}:${pid}`,
+      source: 'webusb',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      errorCode: classifyUsbException(error),
+    };
+  }
+}
+
+/**
  * Subscribes to real-time physical charger plug/unplug events via Battery Status API.
- * Fires immediately when a physical USB cable is plugged into a phone or laptop!
+ * - Immediately detects if a mobile phone/laptop is already plugged into a USB charger
+ *   upon entering the dead-battery screen.
+ * - Tracks live `charging === false -> true` transitions (`sawUnplugged`) so a laptop
+ *   at 100% battery still triggers cleanly when the user plugs in the charger.
+ * - Listens to live `chargingchange` + `levelchange` events AND runs a lightweight
+ *   1.2s backup poll so Android devices never miss a cable insertion event.
  */
 export function subscribePhysicalChargerEvents(handlers: {
   onChargerConnected: (fingerprint: string) => void;
@@ -313,35 +415,121 @@ export function subscribePhysicalChargerEvents(handlers: {
 
   let disposed = false;
   let batteryRef: BatteryManagerLike | null = null;
-  let previousCharging: boolean | null = null;
+  let wasActivelyCharging = false;
+  let sawUnplugged = false;
+  let pollTimer: number | null = null;
+  const mobile = isLikelyMobileDevice();
 
-  const handleChargingChange = () => {
-    if (disposed || !batteryRef) return;
-    const nowCharging = batteryRef.charging;
-    if (nowCharging && previousCharging === false) {
+  const evaluateBattery = (battery: BatteryManagerLike) => {
+    if (disposed) return;
+    if (!battery.charging) {
+      sawUnplugged = true;
+    }
+    const nowActive = isRealBatteryActivelyCharging(battery, {
+      isMobile: mobile,
+      sawUnplugged,
+    });
+    if (nowActive && !wasActivelyCharging) {
+      wasActivelyCharging = true;
       handlers.onChargerConnected(
-        `usb-power:${Math.round(batteryRef.level * 100)}pct`
+        `usb-power:${Math.round(battery.level * 100)}pct`
       );
-    } else if (!nowCharging && previousCharging === true) {
+    } else if (!nowActive && wasActivelyCharging) {
+      wasActivelyCharging = false;
       handlers.onChargerDisconnected();
     }
-    previousCharging = nowCharging;
+  };
+
+  const handleEvent = () => {
+    if (batteryRef) {
+      evaluateBattery(batteryRef);
+    }
   };
 
   void batteryPromise
     .then((battery) => {
       if (disposed) return;
       batteryRef = battery;
-      previousCharging = battery.charging;
-      battery.addEventListener('chargingchange', handleChargingChange);
+      evaluateBattery(battery);
+      battery.addEventListener('chargingchange', handleEvent);
+      battery.addEventListener('levelchange', handleEvent);
+
+      if (typeof window !== 'undefined') {
+        pollTimer = window.setInterval(() => {
+          if (disposed) return;
+          const freshPromise = getNavigatorBattery();
+          if (freshPromise) {
+            void freshPromise.then((fresh) => evaluateBattery(fresh)).catch(() => {});
+          } else if (batteryRef) {
+            evaluateBattery(batteryRef);
+          }
+        }, 1200);
+      }
     })
     .catch(() => {});
 
   return () => {
     disposed = true;
-    if (batteryRef) {
-      batteryRef.removeEventListener('chargingchange', handleChargingChange);
+    if (pollTimer !== null && typeof window !== 'undefined') {
+      window.clearInterval(pollTimer);
     }
+    if (batteryRef) {
+      batteryRef.removeEventListener('chargingchange', handleEvent);
+      batteryRef.removeEventListener('levelchange', handleEvent);
+    }
+  };
+}
+
+/**
+ * Subscribes to live PC USB audio/video hardware insertions via MediaDevices `devicechange`.
+ * Works across Chrome, Edge, Firefox, and Safari on desktop (even inside iframes!)
+ * whenever a user plugs in a USB headset, USB mic, webcam, or USB-C audio cable.
+ */
+export function subscribePhysicalMediaUsbEvents(handlers: {
+  onDeviceAttached: (fingerprint: string) => void;
+}): () => void {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.mediaDevices ||
+    typeof navigator.mediaDevices.addEventListener !== 'function' ||
+    typeof navigator.mediaDevices.enumerateDevices !== 'function'
+  ) {
+    return () => {};
+  }
+
+  let disposed = false;
+  let baselineCount: number | null = null;
+
+  void navigator.mediaDevices
+    .enumerateDevices()
+    .then((list) => {
+      if (!disposed) baselineCount = list.length;
+    })
+    .catch(() => {});
+
+  const handleDeviceChange = () => {
+    void navigator.mediaDevices
+      .enumerateDevices()
+      .then((list) => {
+        if (disposed) return;
+        if (baselineCount === null) {
+          baselineCount = list.length;
+          return;
+        }
+        if (list.length > baselineCount) {
+          baselineCount = list.length;
+          handlers.onDeviceAttached(`usb-media:attached-${list.length}`);
+        } else {
+          baselineCount = list.length;
+        }
+      })
+      .catch(() => {});
+  };
+
+  navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+  return () => {
+    disposed = true;
+    navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
   };
 }
 

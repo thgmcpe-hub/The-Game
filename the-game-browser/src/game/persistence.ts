@@ -13,18 +13,20 @@ export interface StorageLike {
 
 export interface PersistedProgress {
   readonly version: 1;
+  readonly detectiveName?: string;
   readonly failedAttempts: number;
   readonly lockoutUntil: number | null;
 }
 
 /**
- * Extracts only the security-relevant lockout state.
- * Reloading (F5) always restarts cleanly from the Prologue so the player never
- * misses the opening story, while keeping any active 30s security lockout intact.
+ * Extracts only the detective's identification and security-relevant lockout state.
+ * Reloading (F5) always restarts cleanly at the case intake screen so the player
+ * never misses the start/prologue, while keeping any active 30s lockout intact.
  */
 export function serializeAllowedProgress(state: ChapterState): PersistedProgress {
   return {
     version: 1,
+    detectiveName: state.detectiveName,
     failedAttempts: state.failedAttempts,
     lockoutUntil: state.lockoutUntil,
   };
@@ -55,9 +57,9 @@ export function clearProgress(
 }
 
 /**
- * Always initializes on PROLOGUE_PAST on a fresh page load / F5 (unless
- * `skipPrologue` is explicitly set via `?autostart=1`), while preserving any
- * unexpired 30-second passcode lockout timer so refreshing cannot bypass it.
+ * Always initializes on TITLE_INTAKE on a fresh page load / F5 (unless
+ * `skipPrologue` is explicitly set via `?autostart=1`), while preserving the
+ * saved detective name (pre-filled in the form) and any unexpired 30s lockout.
  */
 export function loadRestoredState(options?: {
   storage?: StorageLike | null;
@@ -88,9 +90,14 @@ export function loadRestoredState(options?: {
       parsed.failedAttempts >= 0
         ? Math.floor(parsed.failedAttempts)
         : 0;
+    const savedName =
+      typeof parsed.detectiveName === 'string'
+        ? parsed.detectiveName.trim().slice(0, 40)
+        : '';
 
     return {
       ...base,
+      detectiveName: savedName || base.detectiveName,
       failedAttempts,
       lockoutUntil: activeLockout,
     };

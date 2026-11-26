@@ -265,11 +265,30 @@ test('7. A senha correta (data canônica invertida) libera o aparelho', () => {
   assert.equal(state.unlockedAt, 50_000);
 });
 
-test('8. Recarregar (F5) reinicia no Prólogo mantendo eventual bloqueio ativo de 30s sem falsificar USB', () => {
+test('8. Recarregar (F5) reinicia na tela inicial mantendo nome do detetive e bloqueio ativo de 30s', () => {
   const storage = createMemoryStorage();
 
-  // Case A: Reloading from locked or unlocked state always restarts at PROLOGUE_PAST
-  let lockedState = createInitialChapterState({ skipPrologue: true });
+  // Case A: Starting requires a non-empty detective name
+  let intake = createInitialChapterState();
+  assert.equal(intake.phase, 'TITLE_INTAKE');
+  intake = chapterReducer(intake, {
+    type: 'START_INVESTIGATION',
+    detectiveName: '   ',
+  });
+  assert.equal(intake.phase, 'TITLE_INTAKE');
+
+  intake = chapterReducer(intake, {
+    type: 'START_INVESTIGATION',
+    detectiveName: 'Rafael Mendes',
+  });
+  assert.equal(intake.phase, 'PROLOGUE_PAST');
+  assert.equal(intake.detectiveName, 'Rafael Mendes');
+
+  // Case B: Reloading from locked state restarts at TITLE_INTAKE with saved detectiveName
+  let lockedState = createInitialChapterState({
+    skipPrologue: true,
+    detectiveName: 'Rafael Mendes',
+  });
   lockedState = chapterReducer(lockedState, {
     type: 'USB_VALIDATION_SUCCEEDED',
     deviceFingerprint: '2e8a:000a:LTC-9',
@@ -279,10 +298,11 @@ test('8. Recarregar (F5) reinicia no Prólogo mantendo eventual bloqueio ativo d
   saveProgress(lockedState, storage);
 
   const restoredAfterF5 = loadRestoredState({ storage, now: 2000 });
-  assert.equal(restoredAfterF5.phase, 'PROLOGUE_PAST');
+  assert.equal(restoredAfterF5.phase, 'TITLE_INTAKE');
+  assert.equal(restoredAfterF5.detectiveName, 'Rafael Mendes');
   assert.equal(restoredAfterF5.usbConnected, false);
 
-  // Case B: Active 30s lockout cooldown is preserved across reload so F5 cannot bypass it
+  // Case C: Active 30s lockout cooldown is preserved across reload so F5 cannot bypass it
   const wrongCode = '11111111'.slice(0, getPasscodeLength());
   let lockedOutState = lockedState;
   for (let attempt = 0; attempt < LOCKOUT_POLICY.maxAttemptsBeforeLockout; attempt += 1) {
@@ -297,25 +317,51 @@ test('8. Recarregar (F5) reinicia no Prólogo mantendo eventual bloqueio ativo d
   saveProgress(lockedOutState, storage);
 
   const restoredDuringLockout = loadRestoredState({ storage, now: 15_000 });
-  assert.equal(restoredDuringLockout.phase, 'PROLOGUE_PAST');
+  assert.equal(restoredDuringLockout.phase, 'TITLE_INTAKE');
   assert.equal(isLockedOut(restoredDuringLockout, 15_000), true);
 
   // Corrupted storage falls back safely
   storage.setItem(PROGRESS_STORAGE_KEY, '{invalid-json');
   const fallback = loadRestoredState({ storage, now: 5000 });
-  assert.equal(fallback.phase, 'PROLOGUE_PAST');
+  assert.equal(fallback.phase, 'TITLE_INTAKE');
 });
 
-test('9 & 10. Prólogo abre com pista sutil ao contrário sem vazar a senha numérica e relatório formata 10 itens', () => {
+test('9 & 10. Prólogo com pistas sutis nos slides 01-05, sem oirártnoc oa no slide 06, celular claro e relatório 10 itens', () => {
   const reversed = getExpectedReversedPasscodeForTest();
   const prologueText = PROLOGUE_BLOCKS.flatMap((b) => [
     b.heading ?? '',
     ...b.lines,
-    b.reversedEcho ?? '',
+    b.closingDirective ?? '',
   ]).join(' ');
 
+  assert.equal(PROLOGUE_BLOCKS.length, 6);
   assert.equal(PROLOGUE_BLOCKS[0].heading, 'PRÓLOGO');
-  assert.ok(prologueText.includes('oirártnoc oa'));
+  assert.ok(PROLOGUE_BLOCKS[0].lines[0].includes('esquina de trás de uma boate'));
+  // No literal reversed gibberish words, em-dashes, or heavy-handed "inverte"
+  assert.equal(prologueText.includes('etnerf arap sárt ed'), false);
+  assert.equal(prologueText.includes('oirártnoc oa'), false);
+  assert.equal(prologueText.includes('—'), false);
+  assert.equal(/se inverte/i.test(prologueText), false);
+  // Subtle organic reverse imagery across slides 02, 03, and 04 (3 clues total)
+  const firstFiveText = PROLOGUE_BLOCKS.slice(0, 5)
+    .flatMap((b) => b.lines)
+    .join(' ');
+  assert.ok(firstFiveText.includes('pelo avesso'));
+  assert.ok(firstFiveText.includes('do fim ao começo'));
+  assert.ok(firstFiveText.includes('de trás para frente'));
+  // Slide 01 uses flowing commas instead of choppy periods (at most 1 period per paragraph)
+  const slideOnePeriods = (PROLOGUE_BLOCKS[0].lines.join(' ').match(/\./g) ?? []).length;
+  assert.ok(slideOnePeriods <= 2);
+  // Explicit cell phone retained for analysis & discharged
+  assert.ok(/celular pessoal.*retido para análise/i.test(firstFiveText));
+  assert.ok(/descarregado/i.test(firstFiveText));
+  // Slide 05 is a clean connective bridge; Slide 06 carries slip + closing directive
+  assert.equal(PROLOGUE_BLOCKS[4].includeDocumentSlip, undefined);
+  assert.equal(PROLOGUE_BLOCKS[5].includeDocumentSlip, true);
+  assert.equal(
+    PROLOGUE_BLOCKS[5].closingDirective,
+    'Desbloqueie o celular para dar início à investigação.'
+  );
 
   const narrativeCorpus = [
     prologueText,
@@ -340,13 +386,22 @@ test('9 & 10. Prólogo abre com pista sutil ao contrário sem vazar a senha num�
   assert.ok(report.includes('[x] Sem USB conectado, não é possível iniciar o aparelho'));
 });
 
-test('11. Detecção real de carregador ignora desktop sem bateria e segue 20/40/60/80/100', () => {
+test('11. Detecção real de carregador ignora desktop sem bateria, aceita celular em 100% e segue 20/40/60/80/100', () => {
   assert.deepEqual([...CHARGING_MILESTONES], [20, 40, 60, 80, 100]);
 
   // Desktop PC without battery reports charging=true, level=1, chargingTime=0 -> must NOT false-trigger
   assert.equal(
     isRealBatteryActivelyCharging({ charging: true, level: 1, chargingTime: 0 }),
     false
+  );
+
+  // Real mobile phone plugged in even at 100% -> MUST trigger!
+  assert.equal(
+    isRealBatteryActivelyCharging(
+      { charging: true, level: 1, chargingTime: 0 },
+      { isMobile: true }
+    ),
+    true
   );
 
   // Phone unplugged -> false
@@ -357,6 +412,15 @@ test('11. Detecção real de carregador ignora desktop sem bateria e segue 20/40
       chargingTime: Infinity,
     }),
     false
+  );
+
+  // Laptop at 100% that transitioned from unplugged -> plugged live MUST trigger!
+  assert.equal(
+    isRealBatteryActivelyCharging(
+      { charging: true, level: 1, chargingTime: 0 },
+      { isMobile: false, sawUnplugged: true }
+    ),
+    true
   );
 
   // Real phone/laptop actively charging on USB -> true

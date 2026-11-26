@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { chapterAudio } from '../game/audio';
 import { CHARGING_MILESTONES } from '../game/canonConfig';
 
 interface ChargingScreenProps {
@@ -21,6 +22,7 @@ export function ChargingScreen({ onChargingDone }: ChargingScreenProps) {
       timers.push(
         window.setTimeout(() => {
           setStepIndex(i);
+          chapterAudio.playChargeTick(CHARGING_MILESTONES[i]);
         }, i * 850)
       );
     }
