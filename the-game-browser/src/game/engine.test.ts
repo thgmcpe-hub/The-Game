@@ -433,3 +433,34 @@ test('11. Detecção real de carregador ignora desktop sem bateria, aceita celul
     true
   );
 });
+
+test('12. Ecossistema pós-desbloqueio: 25+ contatos, busca global integrada e zero vazamento da senha', async () => {
+  const eco = await import('./phoneEcosystem');
+  const reversed = getExpectedReversedPasscodeForTest();
+
+  assert.ok(eco.PHONE_CONTACTS.length >= 25);
+  assert.ok(eco.ECOSYSTEM_CHATS.some((c) => c.app === 'pulso' && c.archived));
+  assert.ok(eco.ECOSYSTEM_TRANSACTIONS.some((t) => t.counterparty === 'M. S. Oliveira'));
+
+  // Cross-app Spotlight search for "Acácias" links contact, chat, email, file, and map place
+  const acaciasHits = eco.searchPhoneEcosystem('Acácias');
+  const hitApps = new Set(acaciasHits.map((h) => h.appId));
+  assert.ok(hitApps.has('pulso'));
+  assert.ok(hitApps.has('email'));
+  assert.ok(hitApps.has('files'));
+  assert.ok(hitApps.has('maps'));
+
+  // Spotlight search for "Pix" reaches Banco Áurea
+  const pixHits = eco.searchPhoneEcosystem('devolução chave');
+  assert.ok(pixHits.some((h) => h.appId === 'bank' && h.targetId === 'tx-1'));
+
+  // Zero accidental passcode spoiler inside the unlocked OS corpus
+  const corpus = [
+    ...eco.ECOSYSTEM_CHATS.flatMap((c) => c.messages.map((m) => m.text)),
+    ...eco.ECOSYSTEM_NOTES.flatMap((n) => [n.title, ...n.body]),
+    ...eco.ECOSYSTEM_EMAILS.flatMap((e) => [e.subject, ...e.body]),
+    ...eco.ECOSYSTEM_FILES.flatMap((f) => [f.name, ...f.lines]),
+  ].join(' ');
+  assert.equal(corpus.includes(reversed), false);
+});
+
