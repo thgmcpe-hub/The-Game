@@ -1212,12 +1212,16 @@ export function DatingApp({
 }: {
   onBackHome: () => void;
 }) {
-  const [tab, setTab] = useState<'active' | 'blocked'>('active');
+  const [tab, setTab] = useState<'active' | 'ended' | 'blocked'>('active');
   const [selectedMatch, setSelectedMatch] = useState<DatingMatchRecord | null>(null);
 
-  const visibleMatches = ECOSYSTEM_DATING_MATCHES.filter((m) =>
-    tab === 'blocked' ? m.status === 'blocked' : m.status !== 'blocked'
-  );
+  const counts = {
+    active: ECOSYSTEM_DATING_MATCHES.filter((m) => m.status === 'active').length,
+    ended: ECOSYSTEM_DATING_MATCHES.filter((m) => m.status === 'ended').length,
+    blocked: ECOSYSTEM_DATING_MATCHES.filter((m) => m.status === 'blocked').length,
+  };
+
+  const visibleMatches = ECOSYSTEM_DATING_MATCHES.filter((m) => m.status === tab);
 
   return (
     <div data-testid="app-dating" className="flex min-h-0 flex-1 flex-col bg-[#0c0d11]">
@@ -1245,37 +1249,43 @@ export function DatingApp({
             </h2>
           </div>
         </div>
-
         {!selectedMatch && (
-          <div className="flex rounded-full bg-white/8 p-0.5 text-[11px]">
-            <button
-              type="button"
-              onClick={() => {
-                chapterAudio.playUiTap();
-                setTab('active');
-              }}
-              className={`rounded-full px-2.5 py-1 font-medium ${
-                tab === 'active' ? 'bg-zinc-200 text-zinc-950' : 'text-zinc-400'
-              }`}
-            >
-              Matches
-            </button>
-            <button
-              type="button"
-              data-testid="dating-tab-blocked"
-              onClick={() => {
-                chapterAudio.playUiTap();
-                setTab('blocked');
-              }}
-              className={`rounded-full px-2.5 py-1 font-medium ${
-                tab === 'blocked' ? 'bg-[#752B32] text-rose-100' : 'text-zinc-400'
-              }`}
-            >
-              Bloqueados
-            </button>
-          </div>
+          <span className="font-mono text-[10px] text-zinc-500">
+            {ECOSYSTEM_DATING_MATCHES.length} perfis
+          </span>
         )}
       </div>
+
+      {!selectedMatch && (
+        <div className="grid grid-cols-3 gap-1 border-b border-white/8 bg-[#101218] px-3 py-2 text-[11px]">
+          {(
+            [
+              ['active', `Matches (${counts.active})`],
+              ['ended', `Encerrados (${counts.ended})`],
+              ['blocked', `Bloqueados (${counts.blocked})`],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              data-testid={`dating-tab-${key}`}
+              onClick={() => {
+                chapterAudio.playUiTap();
+                setTab(key);
+              }}
+              className={`rounded-lg py-1.5 font-medium transition-colors ${
+                tab === key
+                  ? key === 'blocked'
+                    ? 'bg-[#752B32] text-rose-100'
+                    : 'bg-zinc-200 text-zinc-950'
+                  : 'text-zinc-400 hover:bg-white/6 hover:text-zinc-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {selectedMatch ? (
         <div className="flex flex-1 flex-col overflow-y-auto px-3.5 py-3">
@@ -1286,6 +1296,11 @@ export function DatingApp({
                 <span className="flex items-center gap-1 rounded-md bg-[#752B32]/40 px-2 py-0.5 text-[10px] text-rose-200">
                   <Ban className="h-3 w-3" />
                   Bloqueado em {selectedMatch.lastActive}
+                </span>
+              )}
+              {selectedMatch.status === 'ended' && (
+                <span className="rounded-md bg-white/8 px-2 py-0.5 text-[10px] text-zinc-400">
+                  Conversa encerrada
                 </span>
               )}
             </div>
@@ -1333,7 +1348,9 @@ export function DatingApp({
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                   match.status === 'blocked'
                     ? 'bg-[#752B32]/45 text-rose-200'
-                    : 'bg-zinc-800 text-zinc-200'
+                    : match.status === 'ended'
+                      ? 'bg-zinc-800/80 text-zinc-400'
+                      : 'bg-zinc-800 text-zinc-200'
                 }`}
               >
                 {match.status === 'blocked' ? (
@@ -1351,6 +1368,9 @@ export function DatingApp({
                     {match.lastActive}
                   </span>
                 </div>
+                <p className="mt-0.5 text-[10.5px] text-zinc-500">
+                  {match.distanceLabel}
+                </p>
                 <p className="mt-1 line-clamp-2 text-[11px] text-zinc-400">
                   {match.messages[match.messages.length - 1]?.text}
                 </p>

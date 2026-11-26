@@ -434,13 +434,27 @@ test('11. Detecção real de carregador ignora desktop sem bateria, aceita celul
   );
 });
 
-test('12. Ecossistema pós-desbloqueio: 25+ contatos, busca global integrada e zero vazamento da senha', async () => {
+test('12. Ecossistema pós-desbloqueio: 30+ contatos, Faísca ampliado sem Gustavo, conversas densas e zero vazamento da senha', async () => {
   const eco = await import('./phoneEcosystem');
   const reversed = getExpectedReversedPasscodeForTest();
 
-  assert.ok(eco.PHONE_CONTACTS.length >= 25);
+  assert.ok(eco.PHONE_CONTACTS.length >= 32);
+  assert.ok(eco.ECOSYSTEM_CHATS.length >= 25);
+  assert.ok(eco.ECOSYSTEM_CHATS.filter((c) => c.app === 'pulso').length >= 18);
   assert.ok(eco.ECOSYSTEM_CHATS.some((c) => c.app === 'pulso' && c.archived));
+  assert.ok(eco.ECOSYSTEM_DATING_MATCHES.length >= 10);
+  assert.ok(eco.ECOSYSTEM_DATING_MATCHES.some((m) => m.status === 'active'));
+  assert.ok(eco.ECOSYSTEM_DATING_MATCHES.some((m) => m.status === 'ended'));
+  assert.ok(eco.ECOSYSTEM_DATING_MATCHES.some((m) => m.status === 'blocked'));
   assert.ok(eco.ECOSYSTEM_TRANSACTIONS.some((t) => t.counterparty === 'M. S. Oliveira'));
+
+  // "Gustavo" must be completely removed from contacts, dating app, and calendar
+  const allNamesCorpus = [
+    ...eco.PHONE_CONTACTS.map((p) => p.name),
+    ...eco.ECOSYSTEM_DATING_MATCHES.map((m) => m.name),
+    ...eco.ECOSYSTEM_CALENDAR_EVENTS.map((e) => e.title),
+  ].join(' ');
+  assert.equal(/gustavo/i.test(allNamesCorpus), false);
 
   // Cross-app Spotlight search for "Acácias" links contact, chat, email, file, and map place
   const acaciasHits = eco.searchPhoneEcosystem('Acácias');
@@ -450,7 +464,7 @@ test('12. Ecossistema pós-desbloqueio: 25+ contatos, busca global integrada e z
   assert.ok(hitApps.has('files'));
   assert.ok(hitApps.has('maps'));
 
-  // Spotlight search for "Pix" reaches Banco Áurea
+  // Spotlight search for "devolução chave" reaches Banco Áurea
   const pixHits = eco.searchPhoneEcosystem('devolução chave');
   assert.ok(pixHits.some((h) => h.appId === 'bank' && h.targetId === 'tx-1'));
 
